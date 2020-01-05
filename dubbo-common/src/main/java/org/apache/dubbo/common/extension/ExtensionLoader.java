@@ -83,9 +83,22 @@ public class ExtensionLoader<T> {
     private static final String DUBBO_INTERNAL_DIRECTORY = DUBBO_DIRECTORY + "internal/";
 
     private static final Pattern NAME_SEPARATOR = Pattern.compile("\\s*[,]+\\s*");
-
+    /**
+      * 拓展加载器集合
+      *
+      * key：拓展接口
+      */
     private static final ConcurrentMap<Class<?>, ExtensionLoader<?>> EXTENSION_LOADERS = new ConcurrentHashMap<>();
 
+    /**
+      * 拓展实现类集合
+      *
+      * key：拓展实现类
+      * value：拓展对象。
+      *
+      * 例如，key 为 Class<AccessLogFilter>
+      *  value 为 AccessLogFilter 对象
+      */
     private static final ConcurrentMap<Class<?>, Object> EXTENSION_INSTANCES = new ConcurrentHashMap<>();
 
     private final Class<?> type;
