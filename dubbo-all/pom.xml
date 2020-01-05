@@ -909,7 +909,8 @@
                             </links>
                         </configuration>
                     </plugin>
-                </plugins>
+                    
+                    
             </build>
         </profile>
     </profiles>

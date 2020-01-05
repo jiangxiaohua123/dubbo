@@ -53,6 +53,12 @@ import static org.apache.dubbo.common.utils.ReflectUtils.findMethodByMethodSigna
  *
  * @export
  */
+/**
+ * 
+ *抽象配置类，除了 ArgumentConfig ，我们可以看到所有的配置类都继承该类。
+*AbstractConfig 主要提供配置解析与校验相关的工具方法。
+ *
+ */
 public abstract class AbstractConfig implements Serializable {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractConfig.class);
@@ -81,6 +87,10 @@ public abstract class AbstractConfig implements Serializable {
 
     /**
      * The config id
+     */
+    /**
+            * 配置对象的编号，适用于除了 API 配置之外的三种配置方式，标记一个配置对象，可用于对象之间的引用。
+            * 例如 XML 的 <dubbo:service provider="${PROVIDER_ID}"> ，其中 provider 为 <dubbo:provider> 的 ID 属性
      */
     protected String id;
     protected String prefix;
@@ -113,17 +123,26 @@ public abstract class AbstractConfig implements Serializable {
         appendParameters(parameters, config, null);
     }
 
+    /**
+     * parameters ，参数集合。实际上，该集合会用于 URL.parameters 。
+	 *config ，配置对象。
+	 *prefix ，属性前缀。用于配置项添加到 parameters 中时的前缀。
+     */
     @SuppressWarnings("unchecked")
     public static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         if (config == null) {
             return;
         }
+        // 获得所有方法的数组，为下面通过反射获得配置项的值做准备。
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
                 String name = method.getName();
+                // 判断方法是否是get方法 ,方法为获得基本类型 + public 的 getting 方法。
                 if (MethodUtils.isGetter(method)) {
+                	// 获取Parameter注解
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    //返回值类型为 Object 或排除( `@Parameter.exclue=true` )的配置项，跳过。
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
@@ -131,14 +150,18 @@ public abstract class AbstractConfig implements Serializable {
                     if (parameter != null && parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
+                    	// 获取属性名(获得配置项名)
                         key = calculatePropertyFromGetter(name);
                     }
+                    // 获得属性值  （获得配置项值。）
                     Object value = method.invoke(config);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
+                    	// 转义
                         if (parameter != null && parameter.escaped()) {
                             str = URL.encode(str);
                         }
+                        // 拼接，详细说明参见 `Parameter#append()` 方法的说明。
                         if (parameter != null && parameter.append()) {
                             String pre = parameters.get(key);
                             if (pre != null && pre.length() > 0) {
@@ -148,12 +171,17 @@ public abstract class AbstractConfig implements Serializable {
                         if (prefix != null && prefix.length() > 0) {
                             key = prefix + "." + key;
                         }
+                        // 添加配置项到 parameters
                         parameters.put(key, str);
+                        // 当 `@Parameter.required = true` 时，校验配置项非空。
                     } else if (parameter != null && parameter.required()) {
                         throw new IllegalStateException(config.getClass().getSimpleName() + "." + key + " == null");
                     }
-                } else if (isParametersGetter(method)) {
+                } else if (isParametersGetter(method)) { // `#getParameters()` 方法
+                	// 通过反射，获得 #getParameters() 的返回值为 map
                     Map<String, String> map = (Map<String, String>) method.invoke(config, new Object[0]);
+                    // 将 map 添加到 parameters ，kv 格式为 prefix:entry.key entry.value 
+                    // 因此，通过 #getParameters() 对应的属性，动态设置配置项，拓展出非 Dubbo 内置好的逻辑。
                     parameters.putAll(convert(map, prefix));
                 }
             } catch (Exception e) {
@@ -167,6 +195,12 @@ public abstract class AbstractConfig implements Serializable {
         appendAttributes(parameters, config, null);
     }
 
+    /**
+     * #appendAttributes(parameters, config, prefix) 方法，将 @Parameter(attribute = true) 配置对象的属性，添加到参数集合。
+     * @param parameters
+     * @param config
+     * @param prefix
+     */
     @Deprecated
     protected static void appendAttributes(Map<String, Object> parameters, Object config, String prefix) {
         if (config == null) {
@@ -271,6 +305,11 @@ public abstract class AbstractConfig implements Serializable {
         return propertyName;
     }
 
+    /**
+              * 获取属性名
+     * @param name
+     * @return
+     */
     private static String calculatePropertyFromGetter(String name) {
         int i = name.startsWith("get") ? 3 : 2;
         return StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");

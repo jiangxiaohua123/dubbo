@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The module info
+ * The module info    模块信息配置
  *
  * @export
  */
@@ -33,22 +33,23 @@ public class ModuleConfig extends AbstractConfig {
     private static final long serialVersionUID = 5508512956753757169L;
 
     /**
-     * Module name
+     * Module name  当前模块名称，用于注册中心计算模块间依赖关系
      */
     private String name;
 
     /**
-     * Module version
+     * Module version   当前模块的版本
      */
     private String version;
 
     /**
-     * Module owner
+     * Module owner   模块负责人，用于服务治理，请填写负责人公司邮箱前缀
      */
     private String owner;
 
     /**
-     * Module's organization
+     * Module's organization   
+     * 组织名称(BU或部门)，用于注册中心区分服务来源，此配置项建议不要使用autoconfig，直接写死在配置中，比如china,intl,itu,crm,asc,dw,aliexpress等
      */
     private String organization;
 
